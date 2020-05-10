@@ -1,8 +1,7 @@
-﻿using Interfaces;
+using Interfaces;
 using Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using Utilities;
@@ -66,11 +65,8 @@ namespace SampleApp
             if (!interfaceType.GetTypeInfo().IsInterface)
                 throw new ArgumentException();
 
-            var assemblies = new FileInfo(Uri.UnescapeDataString(new UriBuilder(Assembly.GetExecutingAssembly().CodeBase).Path))
-                .Directory.GetFiles().Where(file => file.Extension == ".dll")
-                .Select(dll => Assembly.LoadFile(dll.FullName));
-
-            return assemblies.SelectMany(element => element.GetTypes())
+            return AppDomain.CurrentDomain.GetAssemblies()
+                  .SelectMany(element => element.GetTypes())
                   .Where(type => interfaceType.IsAssignableFrom(type)
                   && type.GetTypeInfo().IsClass);
         }
