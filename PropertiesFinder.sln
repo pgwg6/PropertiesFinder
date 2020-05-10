@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{09595555-EFD6-4203-AB32-7732F2A43AE9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "Models\Models.csproj", "{09595555-EFD6-4203-AB32-7732F2A43AE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interfaces", "Interfaces\Interfaces.csproj", "{098013CC-7E42-4E10-B016-30D17045B31B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Interfaces", "Interfaces\Interfaces.csproj", "{098013CC-7E42-4E10-B016-30D17045B31B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{8AA43D4D-C510-4B93-BD4E-2BBF53952F4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{8AA43D4D-C510-4B93-BD4E-2BBF53952F4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utilities\Utilities.csproj", "{42A0CDFB-8A68-4C9E-8FDC-34202330BFF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Utilities.csproj", "{42A0CDFB-8A68-4C9E-8FDC-34202330BFF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationSprzedajemy", "IntegrationSprzedajemy\IntegrationSprzedajemy.csproj", "{D3369AE2-300F-457E-A6E8-24B580ECEAEA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{42A0CDFB-8A68-4C9E-8FDC-34202330BFF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42A0CDFB-8A68-4C9E-8FDC-34202330BFF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42A0CDFB-8A68-4C9E-8FDC-34202330BFF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3369AE2-300F-457E-A6E8-24B580ECEAEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3369AE2-300F-457E-A6E8-24B580ECEAEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3369AE2-300F-457E-A6E8-24B580ECEAEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3369AE2-300F-457E-A6E8-24B580ECEAEA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
