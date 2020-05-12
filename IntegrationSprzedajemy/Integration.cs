@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
@@ -99,7 +99,9 @@ namespace IntegrationSprzedajemy
 
         private Entry RetriveEntry(string url)
         {
+#if DEBUG && TRACE 
             Console.WriteLine($"Processing {url}");
+#endif
             try
             {
                 /*
@@ -114,7 +116,7 @@ namespace IntegrationSprzedajemy
                  *          priceWrp
                  */
 
-                // Bottleneck : HtmlAgilityPack.HtmlWeb.Load looks like signlethread method (very inefficient package to load page from internet
+                // Bottleneck : HtmlAgilityPack.HtmlWeb.Load looks like signlethread method (very inefficient package to load page from internet)
                 // Possible optimization : `smart/html` CURL on each thread and then parse from memory to HtmlDocument
                 HtmlWeb web = new HtmlWeb();
                 HtmlDocument doc = web.Load($"{WebPage.Url}{url}");
@@ -137,19 +139,23 @@ namespace IntegrationSprzedajemy
                         SellerContact = GetSellerContact(additionalInfoBoxNode),
                         CreationDateTime = GetCreationDateTime(offerAdditionalInfoNode)
                     },
-                    PropertyAddress = GetPropertyAddress(detailedInfoNode, offerAdditionalInfoNode),
+                    PropertyAddress = GetPropertyAddress(detailedInfoNode, offerAdditionalInfoNode, detailedInformationsNode.InnerText),
                     PropertyDetails = GetPropertyDetails(attributesBoxNode),
-                    PropertyFeatures = new PropertyFeatures(), // not unified data, error's level too high
+                    PropertyFeatures = GetPropertyFeatures(detailedInformationsNode.InnerText),
                     PropertyPrice = GetPropertyPrice(priceWrpNode),
                     RawDescription = detailedInformationsNode.InnerText
                 };
 
+#if DEBUG && TRACE 
                 Console.WriteLine($"Ended {url}");
+#endif
                 return e;
             }
             catch
             {
+#if TRACE
                 Console.WriteLine($"Error in {url}");
+#endif
                 return new Entry();
             }
         }
@@ -236,12 +242,23 @@ namespace IntegrationSprzedajemy
             {'Ą', 'A'}, {'Ć', 'C'}, {'Ę', 'E'}, {'Ł', 'L'}, {'Ń', 'N'}, {'Ó', 'O'}, {'Ś', 'S'}, {'Ż', 'Z'}, {'Ź', 'Z'}
         };
 
-        private PropertyAddress GetPropertyAddress(HtmlNode detailInfoNode, HtmlNode offerAdditionalInfoNode)
+        private readonly Regex PropertyAddressStreetRegex = new Regex(@"(ul|ul\.|ulica)\s?([A-Z][a-z]*\s?){1,4} (\d*)?");
+        private PropertyAddress GetPropertyAddress(HtmlNode detailInfoNode, HtmlNode offerAdditionalInfoNode, string description)
         {
             var city = detailInfoNode.SelectSingleNode(XPathHelper.GetElementByClass("span", "locationName trunc")).InnerText.ToUpper();
             var locationName = offerAdditionalInfoNode.SelectSingleNode(XPathHelper.GetElementByClass("a", "locationName"));
             var district = new string(locationName.InnerText.Remove(0, city.Length).TakeWhile(c => c != ',').ToArray());
             var street = locationName.Attributes["data-details"]?.Value;
+            var detailed = "";
+            if(street == "")
+            {
+                var streetMatch = PropertyAddressStreetRegex.Match(description);
+                if(streetMatch.Success)
+                {
+                    street = streetMatch.Groups[2].Value;
+                    detailed = streetMatch.Groups[3].Value;
+                }
+            }
 
             foreach (var ch in PolishUpperDiacriticsMapping)
             {
@@ -249,8 +266,8 @@ namespace IntegrationSprzedajemy
             }
             city = city.Replace(' ', '_');
 
-            var coords = detailInfoNode.SelectSingleNode(XPathHelper.GetElementByClass("div", "user-contact-item location clickable"));
-            string detailed = coords != null ? coords.Attributes["data-coordinates"].Value : "";
+            //var coords = detailInfoNode.SelectSingleNode(XPathHelper.GetElementByClass("div", "user-contact-item location clickable"));
+            //string detailed = coords != null ? coords.Attributes["data-coordinates"].Value : "";
 
             return new PropertyAddress
             {
@@ -258,6 +275,41 @@ namespace IntegrationSprzedajemy
                 DetailedAddress = detailed,
                 District = district,
                 StreetName = street
+            };
+        }
+
+        private readonly Regex PropertyFeaturesBalconySingleRegex = new Regex(@"([Bb]alkon|[Bb]alkonu|[Bb]alkonem|[Bb]alkonie)\s");
+        private readonly Regex PropertyFeaturesBalconyMultipleRegex = new Regex(@"([Bb]alkony|[Bb]alkonów|[Bb]alkonami|[Bb]alkonach)\s");
+        private readonly Regex PropertyFeaturesParkingIndoorSingleRegex = new Regex(@"([Gg]araż|[Gg]arażu|[Gg]arażem)\s");
+        private readonly Regex PropertyFeaturesParkingIndoorMultipleRegex = new Regex(@"([Gg]ara[zż]e|[Gg]ara[zż]y|[Gg]ara[zż]ami|[Gg]ara[zż]ach)\s");
+        private readonly Regex PropertyFeaturesParkingOutdoorSingleRegex = new Regex(@"([Mm]iejsce parkingowe|[Mm]iejsca parkingowego|[Mm]iejscem parkingowym|[Mm]iejscu parkingowym|[Pp]arking|[Pp]arkingu|[Pp]arkingiem|[Pp]arkingu)\s");
+        private readonly Regex PropertyFeaturesParkingOutdoorMultipleRegex = new Regex(@"([Mm]iejsca parkingowe|[Mm]iejsc parkingowych|[Mm]iejscami parkingowymi|[Mm]iejscach parkingowych)\s");
+        private readonly Regex PropertyFeaturesGardenRegex = new Regex(@"([Oo]gród|[Oo]grodem|[Oo]grodami)\s");
+        private readonly Regex PropertyFeaturesBasementRegex = new Regex(@"([Pp]iwnica|[Pp]iwnicą|[Pp]iwnicami)\s");
+        private PropertyFeatures GetPropertyFeatures(string description)
+        {
+            Func<Regex, Regex, int?> GetNum = (Regex single, Regex multiple) =>
+            {
+                // Note : cannot deduce number of items from non-unified data
+                if (multiple.Match(description).Success) return 2;
+                if (single.Match(description).Success) return 1;
+                return null;
+            };
+
+            int? balconies = GetNum(PropertyFeaturesBalconySingleRegex, PropertyFeaturesBalconyMultipleRegex);
+            int? indoorParking = GetNum(PropertyFeaturesParkingIndoorSingleRegex, PropertyFeaturesParkingIndoorMultipleRegex);
+            int? outdoorParking = GetNum(PropertyFeaturesParkingOutdoorSingleRegex, PropertyFeaturesParkingOutdoorMultipleRegex);
+
+            bool isBasement = PropertyFeaturesBasementRegex.Match(description).Success;
+            bool isGarden = PropertyFeaturesGardenRegex.Match(description).Success;
+
+            return new PropertyFeatures
+            {
+                Balconies = balconies,
+                BasementArea = isBasement ? 1 : 0,
+                GardenArea = isGarden ? 1 : 0,
+                IndoorParkingPlaces = indoorParking,
+                OutdoorParkingPlaces = outdoorParking
             };
         }
 
